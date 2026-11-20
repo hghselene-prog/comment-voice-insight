@@ -1,6 +1,6 @@
 ---
 name: bili-comment-insight
-description: 把 B 站评论（Word/CSV 导出）变成四件套洞察成品——高信息密度 Word 报告、决策用 PPT、网页版 HTML、微信可分享长图。用于新品发布后的用户声音分析、竞品评论调研、产品改进点提炼。关键词：B站评论、评论分析、声量、用户洞察、评论报告、弹幕评论、产品口碑、新品反馈。
+description: 把 B 站评论（Word/CSV 导出，或从零用 API 采集）变成四件套洞察成品——高信息密度 Word 报告、决策用 PPT、网页版 HTML、微信可分享长图。用于新品发布后的用户声音分析、竞品评论调研、跨代消费者声音对比、产品改进点提炼。关键词：B站评论、评论分析、声量、用户洞察、评论报告、弹幕评论、产品口碑、新品反馈、跨代对比、消费者声音。
 ---
 
 # B站评论洞察四件套
@@ -41,6 +41,24 @@ SKILL=~/.codebuddy/skills/bili-comment-insight
 WORK=/workspace/<项目名>            # 例：/workspace/bili-xiaomi17
 mkdir -p $WORK && cd $WORK
 ```
+
+### 0.5 若手上只有产品名：先采集评论
+
+原流程假设你已有评论导出稿。若还没有，用 `collectors/` 从 B 站公开 API 采集（related 扩散绕开搜索风控）：
+
+```bash
+cd $SKILL/collectors
+cp config.example.json $WORK/collect_config.json   # 改成你的品类词表（判断层）
+python3 collect_videos.py  $WORK/collect_config.json $WORK/out/videos.json
+python3 fetch_comments.py  $WORK/collect_config.json $WORK/out/videos.json $WORK/out/comments.json
+python3 analyze_themes.py  $WORK/collect_config.json $WORK/out/comments.json $WORK/out/comments_tagged.json
+python3 download_covers.py $WORK/out/comments.json $WORK/out/videos.json $WORK/covers/   # 可选配图
+```
+
+详细用法、词表定制要点、平台限制见 [`collectors/README.md`](./collectors/README.md)。
+做**跨代/新品 vs 老品**对比时，另见 [`references/crossgen-analysis.md`](./references/crossgen-analysis.md)——归一化占比、心态演进链、口径声明都在那里。
+
+> 注意：评论接口未登录态每视频只放少量热评，产出是方向性洞察不是精确统计，必须写进报告。
 
 ### 1. 解析 → CSV
 
@@ -124,6 +142,8 @@ PPT 同理：`soffice --convert-to pdf <pptx>`。
 - 分群**唯一分配**，优先级 已购 > 强意向 > 劝退 > 观望。
 - B 站 App 复制稿约 **42% 评论缺点赞行**，是导出特性不是解析丢失。覆盖率 20% 左右属正常，必须在报告里写明。
 - 词典粗筛属**中置信**：方向和量级可用，精确百分比要标注谨慎参考。
+- **API 采集**（collectors/）未登录态每视频仅放少量热评 → 方向性洞察，非精确民意统计，报告必须声明。
+- **跨代横比**必须用组内归一化占比（每组内部=100%）；绝对声量受播放量影响不可直接横比。详见 `references/crossgen-analysis.md`。
 
 ## 踩过的坑
 
@@ -136,6 +156,10 @@ PPT 同理：`soffice --convert-to pdf <pptx>`。
 | `pkill -f soffice` 把当前 shell 也杀了 | 别用 pkill，改用不同的 `-env:UserInstallation=file:///tmp/lo_xxx` 配置目录 |
 | ShareLink 工具 403 | 环境限制。改交付长图 + PDF |
 | 长图超 10MB 被微信压缩 | `make_longimg.py --dpi 120` |
+| B站搜索返回空 / v_voucher | 搜索接口风控。改用 `collectors/collect_videos.py` 的 related 扩散 |
+| B站评论只拿到 3 条 | 未登录态硬限制，WBI 签名/换 UA/游标翻页均无效；需 cookie 才能拿全量，本工具不接入凭证 |
+| hdslb 封面下载 0 字节 / 403 | 必须带完整 header（UA+Referer+Accept）且强制 https，见 `download_covers.py` |
+| 采集脚本跑到一半被 SIGTERM | 请求量过大触发 kill。脚本已做每 15 次增量落盘 + sleep，分批跑 |
 
 ## 文件清单
 
@@ -153,6 +177,18 @@ scripts/
 templates/
   config.example.json    词典配置模板（含定制要点注释）
   insights.example.json  洞察文本模板（含写作要求注释）
+collectors/                  【采集层】从产品名到评论 JSON（原流程的前置）
+  bili_api.py               API 底座：匿名 cookie + WBI 签名 + 四类接口
+  collect_videos.py         related 扩散采集视频 + 词表分类
+  fetch_comments.py         按分类/代际挑视频抓热评
+  analyze_themes.py         主题聚类 + 组内归一化占比
+  download_covers.py        下载视频封面（绕过 hdslb 反爬）
+  config.example.json       采集词表示例（MateBook Fold 三代真实配置）
+  README.md                 采集层用法 + 平台限制
+references/
+  crossgen-analysis.md      跨代消费者声音对比方法论
+examples/
+  *.html                    纯内联报告案例（无外部图片依赖）
 ```
 
 依赖：`pandas` `python-docx` `weasyprint` `pillow`（pip）/ `docx` `pptxgenjs`（npm）/ `libreoffice-writer` `poppler-utils`（apt）

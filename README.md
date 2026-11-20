@@ -1,6 +1,6 @@
 # comment-voice-insight
 
-> 把 B 站评论（Word / CSV / JSON 导出）变成四件套洞察成品——高密度 Word 报告、决策用 PPT、网页版 HTML、微信可分享长图。
+> 把 B 站评论（Word / CSV / JSON 导出，或从零用 API 采集）变成四件套洞察成品——高密度 Word 报告、决策用 PPT、网页版 HTML、微信可分享长图。支持跨代消费者声音对比。
 
 **完整文档请阅读 [`SKILL.md`](./SKILL.md)**——那是这套流水线的唯一权威说明（何时用、四件产出、判断层与机械层的分工、执行流程、词典定制方法、洞察撰写口径）。
 
@@ -33,9 +33,20 @@
 │   ├── run_all.sh           # 一键跑完出四件套
 │   ├── package.json         # Node 依赖声明
 │   └── package-lock.json
-└── templates/
-    ├── config.example.json    # 词典配置示例
-    └── insights.example.json  # 洞察 JSON 示例
+├── templates/
+│   ├── config.example.json    # 词典配置示例
+│   └── insights.example.json  # 洞察 JSON 示例
+├── collectors/                # 【采集层】从产品名到评论 JSON（原流程的前置）
+│   ├── bili_api.py            # API 底座：匿名 cookie + WBI 签名
+│   ├── collect_videos.py      # related 扩散采集 + 词表分类
+│   ├── fetch_comments.py      # 抓热评 + 代际切分
+│   ├── analyze_themes.py      # 主题聚类 + 归一化占比
+│   ├── download_covers.py     # 封面下载（绕过反爬）
+│   ├── config.example.json    # 采集词表示例（Fold 三代真实配置）
+│   └── README.md              # 采集层用法 + 平台限制
+├── references/
+│   └── crossgen-analysis.md   # 跨代消费者声音对比方法论
+└── examples/                  # 纯内联报告案例
 ```
 
 ## 快速开始
