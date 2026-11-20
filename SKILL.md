@@ -192,3 +192,9 @@ examples/
 ```
 
 依赖：`pandas` `python-docx` `weasyprint` `pillow`（pip）/ `docx` `pptxgenjs`（npm）/ `libreoffice-writer` `poppler-utils`（apt）
+
+**依赖装不上时的兜底**（实战验证）：
+- `pandas` 装不上 → `build_data.py` 的逻辑可用标准库等价复刻（`csv` + `collections`，输出相同 `_report_data.json` 结构），单独存为 `build_data_std.py` 即可；四件套渲染器只吃 JSON，不关心数据层用什么算。
+- `weasyprint`/`pillow` 装不上 → 长图 PNG 做不了，但 HTML 是主交付且无依赖；用 Chrome `--headless --print-to-pdf` 直接把 HTML 打成 PDF 作为等价替代，中文正常。
+- Node 渲染器（Word/PPT）只需 `npm install` 的 `docx`/`pptxgenjs`，与 Python 依赖相互独立，可单独跑。
+- 注意：`npm install` 若在受保护目录（如 `~/Documents`）被沙箱拦截，改在工作区临时目录装，再用 `NODE_PATH=<dir>/node_modules` 指向。

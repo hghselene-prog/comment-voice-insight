@@ -43,7 +43,7 @@ python3 download_covers.py out/comments.json out/videos.json covers/
 词表就是判断层，**词表质量直接决定采集纯度**：
 
 - `seeds`：先用网页搜索 `产品名 site:bilibili.com/video` 找 3-5 个高播放真机视频当种子，种子选错后面全歪。
-- `context_keywords` + `exclude_keywords`：领域准入 + 排噪。真实踩坑——分析「折叠电脑」时，三折叠**手机**（Mate XT）大量混入，必须靠这对词表切开。
+- `context_keywords` + `exclude_keywords`：领域准入 + 排噪。**两个真实踩坑**：①分析「折叠电脑」时，三折叠**手机**（Mate XT）大量混入；②分析「Pad Air6」时，整个 Air 系列老款（Air2/Air5）被 `pad air` 泛词收进来——都靠这对词表切开。教训：`match_any`/`context` 用具体型号（air6），旧代号（air2/air5/air4）显式写进 `exclude_keywords`，别只靠泛词。
 - `groups`：每组 `match_any` 命中即归入；`signals` 用于两组都不命中时的决胜打分。
 - `date_buckets`：同一产品分代（一代/二代/新品）时，按发布日期前缀切分，这是跨代对比的基础。
 - `themes`：聚类词典，按品类定制。分析汽车却用平板的「芯片/生态」词典 = 垃圾结果。
